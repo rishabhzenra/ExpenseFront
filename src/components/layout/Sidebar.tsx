@@ -52,8 +52,8 @@ const navGroups = [
     {
         title: 'Insights',
         links: [
-            { href: '/analytics', label: 'Analytics', icon: HiOutlineChartBarSquare },
-            { href: '/reports', label: 'Reports', icon: HiOutlineDocumentChartBar },
+            { href: '/analytics', label: 'Analytics', icon: HiOutlineChartBarSquare, exact: true },
+            { href: '/reports', label: 'Reports', icon: HiOutlineDocumentChartBar, exact: true },
         ]
     },
 ];

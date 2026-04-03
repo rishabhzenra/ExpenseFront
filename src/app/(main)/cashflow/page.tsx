@@ -37,8 +37,8 @@ export default function CashflowPage() {
                 .reduce((s, e) => s + Number(e.amount), 0);
 
             // Estimate income from analytics monthly average if no per-month data
-            const incomePerMonth = incomeAnalytics?.totalIncome
-                ? incomeAnalytics.totalIncome / 6
+            const incomePerMonth = incomeAnalytics?.thisMonthTotal
+                ? incomeAnalytics.thisMonthTotal
                 : 245000;
 
             const income = Math.round(incomePerMonth + (Math.random() * 10000 - 5000));

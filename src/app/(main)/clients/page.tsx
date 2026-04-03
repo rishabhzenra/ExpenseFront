@@ -5,7 +5,7 @@ import { clientService, Client } from '@/services/clientService';
 import { formatCurrency } from '@/utils/formatCurrency';
 import {
     HiOutlineUsers, HiOutlinePlusCircle, HiOutlineXMark, HiOutlinePencil,
-    HiOutlineTrash, HiOutlineEnvelope, HiOutlinePhone, HiOutlineBuilding2,
+    HiOutlineTrash, HiOutlineEnvelope, HiOutlinePhone, HiOutlineBuildingOffice2,
     HiOutlineMagnifyingGlass,
 } from 'react-icons/hi2';
 

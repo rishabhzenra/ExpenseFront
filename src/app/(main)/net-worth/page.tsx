@@ -38,7 +38,7 @@ export default function NetWorthPage() {
     const savingsGoalsValue = goals.reduce((s, g) => s + Number(g.current), 0);
     const outstandingInvoices = invStats?.outstanding || 0;
     const taxLiability = taxSummary?.pendingAmount || 0;
-    const monthlyIncome = incomeAnalytics?.totalIncome ? incomeAnalytics.totalIncome / 6 : 0;
+    const monthlyIncome = incomeAnalytics?.thisMonthTotal ? incomeAnalytics.thisMonthTotal : 0;
     const monthlySavings = monthlyIncome * 0.32; // est 32% savings rate
     const liquidCash = monthlySavings * 3; // 3 months emergency
 

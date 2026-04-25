@@ -10,12 +10,15 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { goalService, SavingsGoal } from '@/services/goalService';
 import { incomeService } from '@/services/incomeService';
 import { Income } from '@/types/income';
+import { subscriptionService, SubscriptionAnalytics } from '@/services/subscriptionService';
+import { investmentService, PortfolioSummary } from '@/services/investmentService';
+import { invoiceService, InvoiceStats } from '@/services/invoiceService';
 import {
-    HiOutlineArrowTrendingUp, HiOutlineArrowTrendingDown, HiOutlineBanknotes,
+    HiOutlineArrowTrendingUp, HiOutlineBanknotes,
     HiOutlineScale, HiOutlinePlusCircle, HiOutlineArrowUpRight, HiOutlineArrowDownRight,
     HiOutlineChartBarSquare, HiOutlineTrophy, HiOutlineXMark, HiOutlineChartPie,
     HiOutlineDocumentChartBar, HiOutlineExclamationTriangle, HiOutlineCheckCircle,
-    HiOutlineClock,
+    HiOutlineClock, HiOutlineCreditCard, HiOutlineReceiptPercent, HiOutlineSparkles,
 } from 'react-icons/hi2';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -70,6 +73,9 @@ export default function DashboardPage() {
     const [newGoal, setNewGoal] = useState({ title: '', target: '', deadline: '' });
     const [goalLoading, setGoalLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'expenses' | 'income'>('expenses');
+    const [subAnalytics, setSubAnalytics] = useState<SubscriptionAnalytics | null>(null);
+    const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+    const [invoiceStats, setInvoiceStats] = useState<InvoiceStats | null>(null);
 
     const fetchGoals = useCallback(async () => {
         try { const res = await goalService.findAll(); setGoals(res.data); } catch { /* silent */ }
@@ -79,10 +85,23 @@ export default function DashboardPage() {
         try { const res = await incomeService.findAll(); setRecentIncomes(res.data.slice(0, 5)); } catch { /* silent */ }
     }, []);
 
+    const fetchSubAnalytics = useCallback(async () => {
+        try { const res = await subscriptionService.getAnalytics(); setSubAnalytics(res.data); } catch { /* silent */ }
+    }, []);
+
+    const fetchPortfolio = useCallback(async () => {
+        try { const res = await investmentService.getSummary(); setPortfolio(res.data); } catch { /* silent */ }
+    }, []);
+
+    const fetchInvoiceStats = useCallback(async () => {
+        try { const res = await invoiceService.getStats(); setInvoiceStats(res.data); } catch { /* silent */ }
+    }, []);
+
     useEffect(() => {
         fetchAnalytics(); fetchBudget(); fetchGoals();
         fetchIncomeAnalytics(); fetchExpenses(); fetchRecentIncomes();
-    }, [fetchAnalytics, fetchBudget, fetchGoals, fetchIncomeAnalytics, fetchExpenses, fetchRecentIncomes]);
+        fetchSubAnalytics(); fetchPortfolio(); fetchInvoiceStats();
+    }, [fetchAnalytics, fetchBudget, fetchGoals, fetchIncomeAnalytics, fetchExpenses, fetchRecentIncomes, fetchSubAnalytics, fetchPortfolio, fetchInvoiceStats]);
 
     const handleAddGoal = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -96,9 +115,8 @@ export default function DashboardPage() {
         } finally { setGoalLoading(false); }
     };
 
-    const firstName = user?.name?.split(' ')[0] || 'there';
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const firstName = user?.name?.split(' ')[0] || 'Rishabh';
+    const greeting = 'Good morning';
     const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
     // Chart data
@@ -149,6 +167,22 @@ export default function DashboardPage() {
             label: 'Today\'s Spend', value: analytics?.spentToday ?? 0,
             icon: HiOutlineClock, iconBg: 'bg-purple-50', iconColor: 'text-purple-600', valueColor: 'text-slate-900',
         },
+        {
+            label: 'Portfolio Value', value: portfolio?.totalCurrent ?? 0,
+            icon: HiOutlineChartBarSquare, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', valueColor: 'text-indigo-700',
+        },
+        {
+            label: 'Subscriptions / mo', value: subAnalytics?.monthlyTotal ?? 0,
+            icon: HiOutlineCreditCard, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', valueColor: 'text-amber-700',
+        },
+        {
+            label: 'Outstanding Invoices', value: invoiceStats?.outstanding ?? 0,
+            icon: HiOutlineReceiptPercent, iconBg: 'bg-orange-50', iconColor: 'text-orange-600', valueColor: 'text-orange-700',
+        },
+        {
+            label: 'Goals Savings', value: goals.reduce((s, g) => s + g.current, 0),
+            icon: HiOutlineTrophy, iconBg: 'bg-teal-50', iconColor: 'text-teal-600', valueColor: 'text-teal-700',
+        },
     ];
 
     return (
@@ -171,9 +205,9 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* KPI Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {kpiCards.map((card) => (
+            {/* KPI Rows */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+                {kpiCards.slice(0, 4).map((card) => (
                     <div key={card.label} className="card p-5">
                         <div className="flex items-start justify-between mb-3">
                             <div className={`w-9 h-9 rounded-lg ${card.iconBg} flex items-center justify-center`}>
@@ -185,6 +219,22 @@ export default function DashboardPage() {
                             {card.prefix}{formatCurrency(card.value)}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">{card.label}</p>
+                    </div>
+                ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                {kpiCards.slice(4).map((card) => (
+                    <div key={card.label} className="card p-4">
+                        <div className="flex items-start justify-between mb-2">
+                            <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
+                                <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+                            </div>
+                            {card.trend !== undefined && <TrendBadge value={card.trend} />}
+                        </div>
+                        <p className={`text-lg font-bold tracking-tight ${card.valueColor}`}>
+                            {card.prefix}{formatCurrency(card.value)}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">{card.label}</p>
                     </div>
                 ))}
             </div>
@@ -475,10 +525,103 @@ export default function DashboardPage() {
                         )}
                     </div>
 
+                    {/* Portfolio Snapshot */}
+                    {portfolio && portfolio.count > 0 && (
+                        <div className="card p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="section-title">Investment Portfolio</h2>
+                                <Link href="/investments" className="text-xs text-blue-600 font-medium hover:text-blue-700">View All</Link>
+                            </div>
+                            <div className="flex items-end justify-between mb-3">
+                                <div>
+                                    <p className="text-xs text-slate-500 mb-0.5">Current Value</p>
+                                    <p className="text-xl font-bold text-slate-900">{formatCurrency(portfolio.totalCurrent)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-slate-500 mb-0.5">Total Gain</p>
+                                    <p className={`text-sm font-semibold ${portfolio.totalGain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {portfolio.totalGain >= 0 ? '+' : ''}{formatCurrency(portfolio.totalGain)}
+                                        <span className="text-xs ml-1">({portfolio.gainPct >= 0 ? '+' : ''}{portfolio.gainPct.toFixed(1)}%)</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="space-y-2 pt-3 border-t border-slate-100">
+                                {Object.entries(portfolio.byType).slice(0, 4).map(([type, data]) => {
+                                    const gain = data.current - data.invested;
+                                    return (
+                                        <div key={type} className="flex items-center justify-between text-xs">
+                                            <span className="text-slate-600 capitalize">{type.replace('_', ' ')}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-900 font-medium">{formatCurrency(data.current)}</span>
+                                                <span className={gain >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                                                    {gain >= 0 ? '+' : ''}{formatCurrency(gain)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Subscriptions Summary */}
+                    {subAnalytics && subAnalytics.totalActive > 0 && (
+                        <div className="card p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="section-title">Subscriptions</h2>
+                                <Link href="/subscriptions" className="text-xs text-blue-600 font-medium hover:text-blue-700">Manage</Link>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div className="bg-amber-50 rounded-lg p-3 text-center">
+                                    <p className="text-lg font-bold text-amber-700">{formatCurrency(subAnalytics.monthlyTotal)}</p>
+                                    <p className="text-[11px] text-amber-600 mt-0.5">per month</p>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg p-3 text-center">
+                                    <p className="text-lg font-bold text-slate-700">{subAnalytics.totalActive}</p>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">active</p>
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t border-slate-100">
+                                <p className="text-xs text-slate-500">
+                                    <span className="font-semibold text-slate-700">{formatCurrency(subAnalytics.yearlyTotal)}</span> billed annually
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Invoice Overview */}
+                    {invoiceStats && invoiceStats.total > 0 && (
+                        <div className="card p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="section-title">Invoices</h2>
+                                <Link href="/invoices" className="text-xs text-blue-600 font-medium hover:text-blue-700">View All</Link>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                <div className="text-center p-2.5 bg-emerald-50 rounded-lg">
+                                    <p className="text-base font-bold text-emerald-700">{formatCurrency(invoiceStats.paidValue)}</p>
+                                    <p className="text-[11px] text-emerald-600 mt-0.5">{invoiceStats.paid} paid</p>
+                                </div>
+                                <div className={`text-center p-2.5 rounded-lg ${invoiceStats.overdue > 0 ? 'bg-red-50' : 'bg-slate-50'}`}>
+                                    <p className={`text-base font-bold ${invoiceStats.overdue > 0 ? 'text-red-700' : 'text-slate-700'}`}>{formatCurrency(invoiceStats.outstanding)}</p>
+                                    <p className={`text-[11px] mt-0.5 ${invoiceStats.overdue > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                                        {invoiceStats.overdue > 0 ? `${invoiceStats.overdue} overdue` : `${invoiceStats.sent} pending`}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t border-slate-100 flex justify-between text-xs text-slate-500">
+                                <span>{invoiceStats.draft} draft{invoiceStats.draft !== 1 ? 's' : ''}</span>
+                                <span className="font-medium text-slate-700">{invoiceStats.total} total invoices</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* AI Insights */}
                     {analytics?.insights && analytics.insights.length > 0 && (
                         <div className="card p-5">
-                            <h2 className="section-title mb-4">Insights</h2>
+                            <div className="flex items-center gap-2 mb-4">
+                                <HiOutlineSparkles className="w-4 h-4 text-blue-500" />
+                                <h2 className="section-title">Smart Insights</h2>
+                            </div>
                             <div className="space-y-2.5">
                                 {analytics.insights.map((insight, i) => (
                                     <div key={i} className="flex gap-2.5 p-3 bg-blue-50 rounded-lg">

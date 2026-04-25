@@ -21,6 +21,7 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [demoLoading, setDemoLoading] = useState(false);
 
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 
@@ -33,6 +34,18 @@ export default function LoginPage() {
             setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loginAsDemo = async () => {
+        setDemoLoading(true);
+        setError('');
+        try {
+            await login('demo@savora.in', 'demo1234');
+        } catch (err: any) {
+            setError('Demo login failed. Please try again.');
+        } finally {
+            setDemoLoading(false);
         }
     };
 
@@ -145,7 +158,37 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <p className="text-center text-sm text-slate-500 mt-6">
+                    <div className="relative my-5">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-slate-200" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                            <span className="bg-slate-50 px-3 text-slate-400 font-medium">or</span>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={loginAsDemo}
+                        disabled={demoLoading}
+                        className="w-full flex items-center justify-center gap-2.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-[0.625rem] transition-colors"
+                        style={{ height: '2.625rem' }}
+                    >
+                        {demoLoading ? (
+                            <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="7" stroke="#2563EB" strokeWidth="1.75"/>
+                                <path d="M10 6.5v4l2.5 2.5" stroke="#2563EB" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        )}
+                        {demoLoading ? 'Logging in...' : 'Try Demo — No signup needed'}
+                    </button>
+
+                    <p className="text-center text-[11px] text-slate-400 mt-2">
+                        Demo account is pre-filled with sample data
+                    </p>
+
+                    <p className="text-center text-sm text-slate-500 mt-5">
                         New to Savora?{' '}
                         <Link href="/signup" className="text-blue-600 font-semibold hover:text-blue-700">Create an account</Link>
                     </p>
